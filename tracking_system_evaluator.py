@@ -22,7 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent
 SYSTEMS_CONFIG = {
     'eagle': {
         'path': BASE_DIR / 'required' / 'systems' / 'eagle',
-        'command': 'python main.py --video_path {video} --output {output}'
+        'command': 'python eagle_wrapper.py --video_path {video} --output {output}',
+        'use_wrapper': True
     },
     'darkmyter': {
         'path': BASE_DIR / 'required' / 'systems' / 'darkmyter',
@@ -30,11 +31,11 @@ SYSTEMS_CONFIG = {
     },
     'anshchoudhary': {
         'path': BASE_DIR / 'required' / 'systems' / 'anshchoudhary',
-        'command': 'python yolo_inference.py --source  {video} --output {output}'
+        'command': 'python yolo_inference.py --source {video} --output {output}'
     },
     'tracklab': {
         'path': BASE_DIR / 'required' / 'systems' / 'tracklab',
-        'command': 'python -m tracklab --video {video} --output {output}'
+        'command': 'uv run --no-sync run_tracklab.py --video {video} --output {output}'
     }
 }
 
@@ -46,7 +47,11 @@ def run_tracking_system(system_name: str, video_path: Path, output_dir: Path) ->
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f'{system_name}_output.json'
 
-    cmd = config['command'].format(video=str(video_path), output=str(output_file))
+    # Build command
+    cmd = config['command'].format(
+        video=f'"{str(video_path)}"',
+        output=f'"{str(output_file)}"'
+    )
 
     start_time = time.time()
     try:
@@ -57,44 +62,62 @@ def run_tracking_system(system_name: str, video_path: Path, output_dir: Path) ->
         print(f"→ In: {config['path'].as_posix()}")
         print(f"→ Output expected at: {output_file.as_posix()}")
 
-        result = subprocess.run(cmd.split(), capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=600)
 
         os.chdir(original_dir)
 
         if result.returncode != 0:
+            error_msg = result.stderr[:500] if result.stderr else "Unknown error"
             return {'tracks': {}, 'time': time.time() - start_time,
-                    'error': f'Command failed: {result.stderr[:200]}'}
+                    'error': f'Command failed: {error_msg}'}
 
         tracks = parse_tracking_output(output_file, system_name)
         return {'tracks': tracks, 'time': time.time() - start_time, 'error': None}
 
     except subprocess.TimeoutExpired:
+        os.chdir(original_dir)
         return {'tracks': {}, 'time': 600, 'error': 'Timeout (10 minutes)'}
     except Exception as e:
+        os.chdir(original_dir)
         return {'tracks': {}, 'time': time.time() - start_time, 'error': str(e)}
 
 
 def parse_tracking_output(output_file: Path, system_name: str) -> Dict:
+    """Parse tracking output and return dictionary of {frame_id: [player_detections]}"""
     tracks = {}
 
     if not output_file.exists():
-        print(f" Output file not found for {system_name}: {output_file.as_posix()}")
+        print(f"✗ Output file not found for {system_name}: {output_file.as_posix()}")
         return tracks
 
     try:
         if system_name in ['eagle', 'anshchoudhary', 'tracklab']:
             with output_file.open('r') as f:
                 data = json.load(f)
-                print(data)
+                
+                # Eagle format: {frame_id: [player_data]}
+                if isinstance(data, dict):
+                    for frame_id, players in data.items():
+                        if isinstance(players, list):
+                            tracks[int(frame_id)] = players
+                
+                print(f"✓ Parsed {len(tracks)} frames from {system_name}")
 
         elif system_name == 'darkmyter':
             with output_file.open('r') as f:
-                for line in f:
-                    parts = line.strip().split(',')
-                    print(parts)
+                data = json.load(f)
+                # Assuming similar format
+                if isinstance(data, dict):
+                    for frame_id, players in data.items():
+                        if isinstance(players, list):
+                            tracks[int(frame_id)] = players
+                            
+                print(f"✓ Parsed {len(tracks)} frames from {system_name}")
 
+    except json.JSONDecodeError as e:
+        print(f"✗ JSON decode error for {system_name}: {e}")
     except Exception as e:
-        print(f" Could not parse output for {system_name}: {e}")
+        print(f"✗ Could not parse output for {system_name}: {e}")
 
     return tracks
 
@@ -125,7 +148,7 @@ def evaluate_video(video_path: Path, systems: List[str] = None, output_dir: Path
                 'total_frames': 0
             }
         else:
-            print(f" Completed in {result['time']:.1f}s")
+            print(f"✓ Completed in {result['time']:.1f}s")
             result['metrics'] = calculate_metrics(result['tracks'])
 
     save_results(results, output_dir)
@@ -149,8 +172,8 @@ def calculate_metrics(tracks: Dict, fps: float = 25.0) -> Dict:
         if 20 <= num_players <= 22:
             good_frames += 1
 
-    detection_rate = (good_frames / len(tracks)) * 100
-    avg_players = total_players / len(tracks)
+    detection_rate = (good_frames / len(tracks)) * 100 if len(tracks) > 0 else 0
+    avg_players = total_players / len(tracks) if len(tracks) > 0 else 0
 
     # Smoothness (placeholder)
     track_smoothness = 0.0
@@ -193,7 +216,7 @@ def save_results(results: Dict, output_dir: Path):
             'metrics': v['metrics']
         } for k, v in results.items()}, f, indent=2)
 
-    print(f"\nResults saved to: {results_file.as_posix()}")
+    print(f"\n✓ Results saved to: {results_file.as_posix()}")
 
 
 def extract_clip(video_path: Path, start_time: int, duration: int, output_path: Path):
@@ -206,7 +229,7 @@ def extract_clip(video_path: Path, start_time: int, duration: int, output_path: 
         '-y'
     ]
     subprocess.run(cmd, capture_output=True)
-    print(f"Extracted clip: {output_path.as_posix()}")
+    print(f"✓ Extracted clip: {output_path.as_posix()}")
 
 
 def test_on_clips(video_path: Path, clip_duration: int = 120):
@@ -221,7 +244,7 @@ def test_on_clips(video_path: Path, clip_duration: int = 120):
     print(f"  FPS: {fps:.1f}")
 
     if total_duration < clip_duration * 3:
-        print(" Video is too short for 3 clips. Using full video instead.")
+        print("✗ Video is too short for 3 clips. Using full video instead.")
         evaluate_video(video_path, output_dir=BASE_DIR / 'results' / 'full_video')
         return
 
@@ -263,7 +286,7 @@ def main():
         videos_path = BASE_DIR / 'required' / 'videos'
         video_files = sorted(videos_path.glob('*.mp4'))
         if not video_files:
-            print("No videos found in required/videos/")
+            print("✗ No videos found in required/videos/")
             return
 
     for video_path in video_files:
