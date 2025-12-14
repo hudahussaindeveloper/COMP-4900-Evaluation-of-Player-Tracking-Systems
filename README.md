@@ -304,7 +304,7 @@ Based on evaluation across 15 video clips (~75 minutes of footage):
 | System | Players/Frame | Track Length | Fragmentation | Jerk Score |
 |--------|---------------|--------------|---------------|------------|
 | Darkmyter | 20.9 | 287 frames | 91.6% | 21,521 |
-| Eagle | 19.9 | 1,562 frames | 57.6% | 20,903 |
+| Eagle | 19.9 | 1,562 frames | 57.6% | 18,494 |
 | YOLO11+BoT-SORT | 17.7 | 22 frames | 99.9% | 8,976* |
 
 *YOLO11's low jerk score is an artifact of extreme track fragmentation (tracks terminate before jerk can accumulate), not genuine trajectory smoothness.
