@@ -1,0 +1,4 @@
+System,Players/Frame,Jerk,Speed (km/h),Violation %,Track Length,Fragment %,Coverage %,Score
+Darkmyter (YOLOv8+ByteTrack),20.9,21521.0,9.3,1.9,287.0,91.6,55.2,0.42411514858176247
+Eagle (YOLOv8+BoT-SORT),19.9,20903.0,11.8,2.5,1562.0,57.6,63.0,0.6468260030780965
+YOLO11 (BoT-SORT),17.7,8976.0,7.7,1.1,22.0,99.9,22.2,0.3

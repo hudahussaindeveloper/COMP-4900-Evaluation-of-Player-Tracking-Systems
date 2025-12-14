@@ -1,0 +1,54 @@
+PLAYER TRACKING SYSTEM COMPARISON REPORT
+
+Generated: 2025-12-14 02:03:53
+Clips Analyzed: 15
+Systems: darkmyter, eagle, yolo11_botsort
+
+CATEGORY WINNERS:
+  Detection Completeness: DARKMYTER
+  Trajectory Smoothness:  YOLO11_BOTSORT
+  Speed Plausibility:     YOLO11_BOTSORT
+  Track Continuity:       EAGLE
+  ID Stability:           EAGLE
+  Coverage Rate:          EAGLE
+
+METRIC DEFINITIONS:
+  Jerk Score: Third derivative of position. Lower = smoother motion.
+  Speed Violation: % of frames exceeding 40 km/h. Lower = more realistic.
+  Detection Completeness: Avg players/frame. Ideal = 20-22.
+  Coverage Rate: % frames with 20-22 detections.
+  Track Length: Avg duration of continuous tracks. Higher = better continuity.
+  Fragmentation: Ratio of broken tracks. Lower = more stable IDs.
+
+--- DARKMYTER ---
+  Frames: 152,624 | Detections: 3,457,412 | Tracks: 11,745
+  Jerk: 21521 | Speed: 9.3 km/h | Violations: 1.9%
+  Players/Frame: 20.9 | Coverage: 55.2%
+  Track Length: 287 frames | Fragmentation: 91.6%
+
+--- EAGLE ---
+  Frames: 114,375 | Detections: 2,357,054 | Tracks: 1,911
+  Jerk: 20903 | Speed: 11.8 km/h | Violations: 2.5%
+  Players/Frame: 19.9 | Coverage: 63.0%
+  Track Length: 1562 frames | Fragmentation: 57.6%
+
+--- YOLO11_BOTSORT ---
+  Frames: 152,624 | Detections: 2,694,578 | Tracks: 186,684
+  Jerk: 8976 | Speed: 7.7 km/h | Violations: 1.1%
+  Players/Frame: 17.7 | Coverage: 22.2%
+  Track Length: 22 frames | Fragmentation: 99.9%
+
+INTER-SYSTEM AGREEMENT:
+  darkmyter vs eagle: IoU=0.741, Distance=2.89px, Disagreement=36.1%
+  darkmyter vs yolo11_botsort: IoU=0.867, Distance=1.06px, Disagreement=49.4%
+  eagle vs yolo11_botsort: IoU=0.734, Distance=3.04px, Disagreement=59.5%
+
+OVERALL RANKING:
+  1. EAGLE (Score: 0.647)
+  2. DARKMYTER (Score: 0.424)
+  3. YOLO11_BOTSORT (Score: 0.300)
+
+RECOMMENDATIONS:
+  Tactical Analysis: DARKMYTER (best detection)
+  Player Tracking:   EAGLE (best continuity)
+  General Use:       EAGLE (best overall)
